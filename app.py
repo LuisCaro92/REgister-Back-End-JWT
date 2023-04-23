@@ -7,7 +7,7 @@ from flask_cors  import CORS
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
-app.config['JWT_SECRET_KEY'] = "super-secreta"
+app.config['JWT_SECRET_KEY'] = "secret_key"
 db.init_app(app)
 
 migrate = Migrate(app, db)
@@ -17,15 +17,11 @@ CORS(app)
 
 @app.route("/")
 def home():
-    return "Hola Mundo"
+    return "Test"
 
-# USER
-
-# POST
 
 @app.route("/users", methods=["POST"])
 def create_user():
-    # Obtiene los datos del usuario de la solicitud
     name = request.json.get("name")
     last_name = request.json.get("last_name")
     email = request.json.get("email")
@@ -34,23 +30,18 @@ def create_user():
     password_hash = generate_password_hash(password)
     password = password_hash
 
-    # Verifica si el correo ya existe en la base de datos
     existing_user = User.query.filter_by(email=email).first()
     if existing_user:
-        return jsonify("El correo ya existe en la base de datos"), 400
+        return jsonify("Email not valid"), 400
 
-    # Crea un nuevo objeto User
     new_user = User(name=name, last_name=last_name, email=email,
                     phone=phone, password=password)
 
-    # Agrega el usuario a la sesión de la base de datos
     db.session.add(new_user)
     db.session.commit()
 
-    # Devuelve una respuesta con código de estado HTTP 201
-    return jsonify("Usuario guardado"), 201
+    return jsonify("User created"), 201
 
-# LOGIN
 
 
 @app.route("/login", methods=["POST"])
@@ -69,9 +60,9 @@ def login():
 
             }), 200
         else:
-            return jsonify("La contraseña es incorrecta"), 400
+            return jsonify("Password incorrect"), 400
     else:
-        return jsonify("El usuario no existe o la información es inválida"), 400
+        return jsonify("Not valid"), 400
 
 
 # GET
@@ -84,8 +75,6 @@ def get_users():
         result.append(user.serialize())
     return jsonify(result)
 
-# GET USER BY ID
-
 
 @app.route("/users/<int:user_id>", methods=["GET"])
 def get_user(user_id):
@@ -93,33 +82,29 @@ def get_user(user_id):
     if user is not None:
         return jsonify(user.serialize())
     else:
-        return jsonify("Usuario no encontrado"), 404
+        return jsonify("User not found"), 404
 
-
-# PUT & DELETE
 
 @app.route("/users/<int:id>", methods=["PUT", "DELETE"])
-@jwt_required
 def update_user(id):    
     user = User.query.get(id)    
     if user is not None:
         if request.method == "DELETE":
             db.session.delete(user)
             db.session.commit()
-            return jsonify("Usuario eliminado"), 204
+            return jsonify("User deleted"), 204
 
         else:
             user.name = request.json.get("name")
             user.last_name = request.json.get("last_name")
             user.phone = request.json.get("phone")
             user.email = request.json.get("email", user.email)
-            user.rol_id = request.json.get("rol_id", user.rol_id)
             user.password = request.json.get("password", user.password)
 
             db.session.commit()
-            return jsonify("Usuario actualizado"), 200
-    return jsonify("Usuario no encontrado"), 404
+            return jsonify("User updated"), 200
+    return jsonify("User not found"), 404
 
 
 if __name__=="__main__":
-    app.run(host="localhost", port="8080")
+    app.run(host="localhost", port="3000")
